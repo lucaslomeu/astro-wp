@@ -1,0 +1,132 @@
+---
+import { gql, request } from 'graphql-request';
+import Layout from '../../layouts/Layout.astro';
+import type { ProjetoResponse } from '../../types/ProjetoResponse';
+import type { WordPressResponse } from '../../types/WordPressResponse';
+
+export async function getStaticPaths() {
+  const endpoint = 'http://wordpress:80/graphql';
+  
+  const query = gql`
+    {
+      projetos {
+        nodes {
+          slug
+        }
+      }
+    }
+  `;
+  
+  try {
+    const data: WordPressResponse = await request(endpoint, query) ;
+    
+    return data.projetos.nodes.map(projeto => ({
+      params: { slug: projeto.slug },
+    }));
+
+  } catch (error) {
+    console.error('Erro ao buscar projetos:', error);
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+const endpoint = 'http://wordpress:80/graphql';
+
+const query = gql`
+  query GetProjeto($slug: ID!) {
+    projeto(id: $slug, idType: SLUG) {
+      id
+      title
+      content
+      date
+      acf {
+        nomeDoCliente
+        logoDoCliente {
+          node {
+            sourceUrl
+            altText
+          }
+        }
+        siteDoCliente
+      }
+    }
+  }
+`;
+
+const data: ProjetoResponse = await request(endpoint, query, { slug });
+const projeto = data.projeto;
+
+if (!projeto) {
+  return Astro.redirect('/404');
+}
+---
+
+<Layout title={`Astro WP - Projeto | ${projeto.title}`}>
+  <div class="max-w-4xl mx-auto px-4 py-4">
+    <article class="bg-white p-4 border-b border-gray-100">
+      <header class="mb-6 px-6">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-4">
+          {projeto.acf && (
+            <div class="flex flex-col md:flex-row items-center bg-gray-50 p-4 md:p-5 md:w-auto">
+              {projeto.acf.logoDoCliente && (
+                <div class="mb-3 md:mb-0 md:mr-4">
+                  <img 
+                    class="w-[70px] h-[70px] object-contain"
+                    src={projeto.acf.logoDoCliente.node.sourceUrl} 
+                    alt={projeto.acf.logoDoCliente.node.altText || `Logo de ${projeto.acf.nomeDoCliente}`} 
+                  />
+                </div>
+              )}
+              
+              {projeto.acf.nomeDoCliente && (
+                <div>
+                  <p class="text-sm text-gray-darker uppercase tracking-wide mb-1">Cliente</p>
+                  <p class="text-xl font-bold text-gray-800">{projeto.acf.nomeDoCliente}</p>
+                  
+                  {projeto.acf.siteDoCliente && (
+                    <a 
+                      href={projeto.acf.siteDoCliente.startsWith('http') ? projeto.acf.siteDoCliente : `https://${projeto.acf.siteDoCliente}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      class="text-accent hover:text-accent-light text-sm mt-1 inline-flex items-center"
+                      aria-label="Website do cliente"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Visitar site de {projeto.acf.nomeDoCliente}
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div class="text-center md:text-right">
+            <p class="text-sm text-gray-darker uppercase tracking-wide mb-1">Publicado em</p>
+            <time datetime={projeto.date} class="text-base text-gray-darker">
+              {new Date(projeto.date).toLocaleDateString('pt-BR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </time>
+          </div>
+        </div>
+        
+        <div class="border-t border-b border-gray-200 py-4 my-4">
+          <h1 class="text-4xl font-bold leading-tight text-center">{projeto.title}</h1>
+        </div>
+      </header>
+
+      <div class="prose max-w-none px-6 pt-4 leading-7 text-lg" set:html={projeto.content}></div>
+      
+      <div class="mt-8 pt-4 px-6 border-t border-gray-200">
+        <a href="/" class="inline-block text-accent hover:text-accent-light font-medium">
+          <span aria-hidden="true">&larr;</span> Voltar para a página inicial
+        </a>
+      </div>
+    </article>
+  </div>
+</Layout>

@@ -1,0 +1,5 @@
+{
+    "name": "Astro WP",
+    "short_name": "AstroWP",
+    "description": "WordPress com Astro usando GraphQL e Tailwind CSS"
+}

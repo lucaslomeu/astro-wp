@@ -1,0 +1,48 @@
+---
+import "../styles/global.css";
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { 
+	title = "Astro WP", 
+	description = "WordPress com Astro usando GraphQL e Tailwind CSS" 
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="pt-BR" class="bg-[#fcfcfc]">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#13151a" />
+		<link rel="manifest" href="/manifest.json" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	</head>
+	<body class="min-h-screen flex flex-col m-0 p-0 w-full text-dark font-sans">
+		<header class="bg-dark py-4 shadow">
+			<nav class="flex items-center" aria-label="Navegação principal">
+				<div class="mx-auto px-4 max-w-7xl">
+					<a href="/" class="text-white text-2xl font-bold no-underline">Astro WP</a>
+				</div>
+			</nav>
+		</header>
+
+		<main class="flex-1">
+			<slot />
+		</main>
+
+		<footer class="bg-gray-light py-4 text-center mt-8">
+			<div class="mx-auto px-4 max-w-7xl">
+				<p>&copy; {new Date().getFullYear()} Blog WordPress com Astro</p>
+			</div>
+		</footer>
+	</body>
+</html>

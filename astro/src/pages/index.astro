@@ -1,0 +1,87 @@
+---
+import { gql, request } from 'graphql-request'
+import Layout from '../layouts/Layout.astro'
+import type { WordPressResponse } from '../types/WordPressResponse'
+
+const endpoint = 'http://wordpress:80/graphql'
+
+const query = gql`
+  {
+    posts {
+      nodes {
+        id
+        title
+        slug
+        date
+      }
+    }
+    projetos {
+      nodes {
+        id
+        title
+        slug
+        date
+        acf {
+          nomeDoCliente
+          logoDoCliente {
+            node {
+              sourceUrl
+              altText
+            }
+          }
+         
+        }
+      }
+    }
+  }
+`
+
+const data: WordPressResponse = await request(endpoint, query);
+const projetos = data.projetos.nodes
+---
+
+<Layout 
+  title="Astro WP | Projetos e Blog"
+  description="WordPress com Astro, GraphQL e Tailwind CSS."
+>
+  <div class="mx-auto px-4 py-8 max-w-7xl">
+    <section>
+      <h1 class="text-4xl font-bold mb-6">Projetos AstroWP</h1>
+      <ul class="divide-y divide-gray-300">
+        {projetos.map(({acf, slug, date, title}) => (
+          <li class="py-5 hover:bg-gray-50">
+            <div class="px-4 flex flex-row items-center gap-4">
+              <div>
+                {acf?.logoDoCliente && (
+                  <img 
+                    src={acf.logoDoCliente.node.sourceUrl} 
+                    alt={acf.logoDoCliente.node.altText || `Logo de ${acf?.nomeDoCliente || title}`}
+                    class="w-[50px] h-[50px] object-contain"
+                  />
+                )}
+              </div>
+              
+              <div class="flex-1">
+                <a href={`/projeto/${slug}`} class="text-2xl font-bold text-gray-800 hover:text-accent block mb-2">
+                  {title}
+                </a>
+                <div class="flex flex-wrap items-center text-sm text-gray-darker gap-3">
+                  {acf?.nomeDoCliente && (
+                    <span class="font-medium">{acf.nomeDoCliente}</span>
+                  )}
+                  <time datetime={date}>
+                    {new Date(date).toLocaleDateString('pt-BR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </time>
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </div>
+</Layout>
