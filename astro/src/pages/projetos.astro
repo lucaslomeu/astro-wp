@@ -1,0 +1,183 @@
+---
+import { gql, request } from 'graphql-request';
+import Layout from '../layouts/Layout.astro';
+import type { WordPressResponse } from '../types/WordPressResponse';
+
+const endpoint = 'http://wordpress:80/graphql';
+
+const query = gql`
+  {
+    projetos {
+      nodes {
+        id
+        title
+        slug
+        date
+        acf {
+          nomeDoCliente
+          logoDoCliente {
+            node {
+              sourceUrl
+              altText
+            }
+          }
+          siteDoCliente
+        }
+      }
+    }
+  }
+`;
+
+const data: WordPressResponse = await request(endpoint, query);
+const projects = data.projetos.nodes;
+
+const yearProjects = projects.reduce((acc, projeto) => {
+  const year = new Date(projeto.date).getFullYear();
+
+  if (!acc[year]) {
+    acc[year] = [];
+  }
+
+  acc[year].push(projeto);
+
+  return acc;
+}, {} as Record<number, typeof projects>);
+
+const yearSorted = Object.keys(yearProjects).map(Number).sort((a, b) => b - a);
+---
+
+<Layout 
+  title="Projetos | Astro WP"
+  description="Explore nossa coleção completa de projetos desenvolvidos com WordPress, Astro, GraphQL e Tailwind CSS."
+>
+  <section class="bg-gradient-to-b from-accent/10 to-white py-16 md:py-24">
+    <div class="max-w-7xl mx-auto px-4 text-center">
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+        Nossos <span class="text-gradient bg-gradient-to-r from-accent to-accent-light bg-clip-text text-transparent">Projetos</span>
+      </h1>
+      <p class="text-xl text-gray-700 max-w-3xl mx-auto mb-8">
+        Conheça nossa seleção de projetos desenvolvidos utilizando WordPress com Astro.
+      </p>
+      <div class="flex justify-center space-x-4">
+        <a href="#lista-projetos" class="px-6 py-3 bg-accent hover:bg-accent-light text-white font-medium rounded-lg transition shadow-lg shadow-accent/20 hover:shadow-accent/30">
+          Ver todos projetos
+        </a>
+        <a href="/" class="px-6 py-3 border border-gray-300 hover:border-accent text-gray-700 hover:text-accent font-medium rounded-lg transition">
+          Voltar para home
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div class="bg-white border-y border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex flex-col sm:flex-row justify-between items-center">
+        <p class="text-gray-500 mb-4 sm:mb-0">
+          <span class="font-bold text-accent">{projects.length}</span> projetos encontrados
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <section id="lista-projetos" class="py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      {yearSorted.map(year => (
+        <div class="mb-16 last:mb-0">
+          <div class="flex items-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">{year}</h2>
+            <div class="ml-4 h-0.5 flex-grow bg-gray-200"></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {yearProjects[year].map(({acf, slug, date, title}) => (
+              <a 
+                href={`/projeto/${slug}`} 
+                class="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow border border-gray-100 flex flex-col h-full transform hover:-translate-y-1 duration-300"
+              >
+                <div class="p-6 flex-grow">
+                  <div class="flex items-start justify-between mb-4">
+                    <div class="flex-shrink-0 bg-gray-50 p-3 rounded-lg">
+                      {acf?.logoDoCliente ? (
+                        <img 
+                          src={acf.logoDoCliente.node.sourceUrl} 
+                          alt={acf.logoDoCliente.node.altText || `Logo de ${acf?.nomeDoCliente || title}`}
+                          class="w-10 h-10 object-contain"
+                          loading="lazy"
+                          width="40"
+                          height="40"
+                        />
+                      ) : (
+                        <div class="w-10 h-10 flex items-center justify-center bg-accent/10 rounded-lg">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent">
+                      Projeto
+                    </span>
+                  </div>
+                  
+                  <h3 class="text-xl font-bold text-gray-900 group-hover:text-accent transition-colors mb-2">
+                    {title}
+                  </h3>
+                  
+                  <div class="mt-2 flex items-center text-sm text-gray-500 mb-4">
+                    {acf?.nomeDoCliente && (
+                      <span class="flex items-center">
+                        {acf.nomeDoCliente}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 mt-auto">
+                  <div class="flex justify-between items-center">
+                    <time datetime={date} class="text-xs text-gray-500">
+                      {new Date(date).toLocaleDateString('pt-BR', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </time>
+                    <span class="inline-flex items-center text-accent group-hover:translate-x-1 transition-transform">
+                      Ver detalhes <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {projects.length === 0 && (
+        <div class="text-center py-16">
+          <div class="inline-flex rounded-full bg-yellow-100 p-4 mb-6">
+            <div class="rounded-full bg-yellow-200 p-2">
+              <svg class="h-6 w-6 text-yellow-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-xl font-medium text-gray-900 mb-2">Nenhum projeto encontrado</h3>
+          <p class="text-gray-500 mb-6">Não existem projetos cadastrados no momento.</p>
+          <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-accent hover:bg-accent-light">
+            Voltar para Home
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .text-gradient {
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 400% 400%;
+  }
+</style>

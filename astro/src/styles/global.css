@@ -23,3 +23,36 @@ header a {
   font-weight: bold;
   font-size: 1.5rem;
 }
+
+:root {
+  --accent: #0077cc;
+  --accent-light: #00a8e8;
+  --accent-dark: #004c8c;
+  --dark: #13151a;
+  --gray: #f5f8fa;
+  --gray-dark: #e4e7eb;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

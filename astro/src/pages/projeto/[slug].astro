@@ -1,8 +1,8 @@
 ---
 import { gql, request } from 'graphql-request';
 import Layout from '../../layouts/Layout.astro';
-import type { ProjetoResponse } from '../../types/ProjetoResponse';
 import type { WordPressResponse } from '../../types/WordPressResponse';
+import type { ProjetoResponse } from '../../types/ProjetoResponse';
 
 export async function getStaticPaths() {
   const endpoint = 'http://wordpress:80/graphql';
@@ -55,78 +55,198 @@ const query = gql`
 `;
 
 const data: ProjetoResponse = await request(endpoint, query, { slug });
-const projeto = data.projeto;
+const projects = data.projeto;
 
-if (!projeto) {
+const queryRelacionados = gql`
+  {
+    projetos(first: 3) {
+      nodes {
+        id
+        title
+        slug
+        acf {
+          nomeDoCliente
+          logoDoCliente {
+            node {
+              sourceUrl
+              altText
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const dataRelacionados: WordPressResponse = await request(endpoint, queryRelacionados);
+const projetosRelacionados = dataRelacionados.projetos.nodes;
+
+const formattedDate = new Date(projects.date).toLocaleDateString('pt-BR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+const firstParagraph = projects.content.match(/<p>(.*?)<\/p>/)?.[1]?.replace(/<\/?[^>]+(>|$)/g, '') || '';
+const description = `${projects.title} - ${firstParagraph.substring(0, 150)}...`;
+
+if (!projects) {
   return Astro.redirect('/404');
 }
 ---
 
-<Layout title={`Astro WP - Projeto | ${projeto.title}`}>
-  <div class="max-w-4xl mx-auto px-4 py-4">
-    <article class="bg-white p-4 border-b border-gray-100">
-      <header class="mb-6 px-6">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-4">
-          {projeto.acf && (
-            <div class="flex flex-col md:flex-row items-center bg-gray-50 p-4 md:p-5 md:w-auto">
-              {projeto.acf.logoDoCliente && (
-                <div class="mb-3 md:mb-0 md:mr-4">
+<Layout 
+  title={`${projects.title} | Astro WP Projetos`}
+  description={description}
+>
+  <div class="bg-gray-50 border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 py-3">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+          <li class="inline-flex items-center">
+            <a href="/" class="text-gray-500 hover:text-accent inline-flex items-center">
+              <svg class="mr-2 w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+              </svg>
+              Home
+            </a>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <a href="/projetos" class="ml-1 text-gray-500 hover:text-accent md:ml-2">Projetos</a>
+            </div>
+          </li>
+          <li aria-current="page">
+            <div class="flex items-center">
+              <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span class="ml-1 text-gray-500 md:ml-2 font-medium truncate max-w-[200px]">
+                {projects.title}
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <div class="bg-gradient-to-b from-white to-gray-50 py-4">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+        <div class="md:max-w-[60%]">
+          <h1 class="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+            {projects.title}
+          </h1>
+          <div class="flex items-center text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <time datetime={projects.date}>{formattedDate}</time>
+          </div>
+        </div>
+
+        {projects.acf && (
+          <div class="bg-white rounded-xl border border-gray-100 shadow-lg p-6 w-full md:w-auto md:min-w-[300px] transform transition hover:-translate-y-1 hover:shadow-xl">
+            <div class="flex items-center mb-4">
+              {projects.acf.logoDoCliente && (
+                <div class="mr-4">
                   <img 
-                    class="w-[70px] h-[70px] object-contain"
-                    src={projeto.acf.logoDoCliente.node.sourceUrl} 
-                    alt={projeto.acf.logoDoCliente.node.altText || `Logo de ${projeto.acf.nomeDoCliente}`} 
+                    class="w-16 h-16 object-contain p-1 border border-gray-100 rounded-lg bg-white"
+                    src={projects.acf.logoDoCliente.node.sourceUrl} 
+                    alt={projects.acf.logoDoCliente.node.altText || `Logo de ${projects.acf.nomeDoCliente}`}
+                    loading="lazy"
+                    width="64"
+                    height="64"
                   />
                 </div>
               )}
               
-              {projeto.acf.nomeDoCliente && (
+              {projects.acf.nomeDoCliente && (
                 <div>
-                  <p class="text-sm text-gray-darker uppercase tracking-wide mb-1">Cliente</p>
-                  <p class="text-xl font-bold text-gray-800">{projeto.acf.nomeDoCliente}</p>
-                  
-                  {projeto.acf.siteDoCliente && (
-                    <a 
-                      href={projeto.acf.siteDoCliente.startsWith('http') ? projeto.acf.siteDoCliente : `https://${projeto.acf.siteDoCliente}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      class="text-accent hover:text-accent-light text-sm mt-1 inline-flex items-center"
-                      aria-label="Website do cliente"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      Visitar site de {projeto.acf.nomeDoCliente}
-                    </a>
-                  )}
+                  <p class="text-sm text-gray-500 uppercase tracking-wide">Cliente</p>
+                  <p class="text-xl font-bold text-gray-800">{projects.acf.nomeDoCliente}</p>
                 </div>
               )}
             </div>
-          )}
+            
+            {projects.acf.siteDoCliente && (
+              <a 
+                href={projects.acf.siteDoCliente} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="flex items-center justify-center w-full py-3 px-4 bg-accent text-white rounded-lg hover:bg-accent-light transition mt-2"
+              >
+                Visitar site de {projects.acf.nomeDoCliente}
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
 
-          <div class="text-center md:text-right">
-            <p class="text-sm text-gray-darker uppercase tracking-wide mb-1">Publicado em</p>
-            <time datetime={projeto.date} class="text-base text-gray-darker">
-              {new Date(projeto.date).toLocaleDateString('pt-BR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </time>
+  <div class="max-w-7xl mx-auto px-4 py-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div class="lg:col-span-2">
+        <div class="prose prose-lg max-w-none">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8" set:html={projects.content}></div>
+        </div>
+
+        <div class="mt-12 border-t border-gray-200 pt-8">
+          <div class="flex flex-col sm:flex-row justify-between">
+            <a href="/" class="flex items-center text-accent hover:text-accent-light mb-4 sm:mb-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+              </svg>
+              Voltar para projetos
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-8">
+          <h3 class="text-lg font-bold text-gray-900 mb-4">Tecnologias</h3>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">Astro</span>
+            <span class="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">WordPress</span>
+            <span class="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">GraphQL</span>
+            <span class="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">Tailwind CSS</span>
+            <span class="px-3 py-1 bg-accent/10 text-accent rounded-full text-sm">Docker</span>
           </div>
         </div>
         
-        <div class="border-t border-b border-gray-200 py-4 my-4">
-          <h1 class="text-4xl font-bold leading-tight text-center">{projeto.title}</h1>
-        </div>
-      </header>
-
-      <div class="prose max-w-none px-6 pt-4 leading-7 text-lg" set:html={projeto.content}></div>
-      
-      <div class="mt-8 pt-4 px-6 border-t border-gray-200">
-        <a href="/" class="inline-block text-accent hover:text-accent-light font-medium">
-          <span aria-hidden="true">&larr;</span> Voltar para a página inicial
-        </a>
+        {projetosRelacionados.length > 0 && (
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Outros Projetos</h3>
+            <div class="space-y-4">
+              {projetosRelacionados.map((projeto) => (
+                <a href={`/projeto/${projeto.slug}`} class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition group">
+                  {projeto.acf?.logoDoCliente && (
+                    <div class="mr-3">
+                      <img 
+                        src={projeto.acf.logoDoCliente.node.sourceUrl} 
+                        alt={projeto.acf.logoDoCliente.node.altText || `Logo`}
+                        class="w-10 h-10 object-contain"
+                        loading="lazy"
+                        width="40"
+                        height="40"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <h4 class="font-medium text-gray-900 group-hover:text-accent transition">{projeto.title}</h4>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-    </article>
+    </div>
   </div>
 </Layout>
