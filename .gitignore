@@ -6,19 +6,6 @@
 /astro/.env
 /astro/.env.local
 
-# WordPress 
-/wordpress/wp-content/uploads/
-/wordpress/wp-content/cache/
-/wordpress/wp-content/upgrade/
-/wordpress/wp-content/backups/
-/wordpress/wp-content/advanced-cache.php
-
-
-/wordpress/wp-content/plugins/*
-!/wordpress/wp-content/plugins/twentytwentyfive-child/
-
-/wordpress/wp-content/themes/*
-
 # Docker
 *.log
 *.pid
