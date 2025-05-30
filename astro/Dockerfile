@@ -4,9 +4,9 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm install astro
 
-RUN npm install -g astro
+RUN npm install
 
 COPY . .
 
